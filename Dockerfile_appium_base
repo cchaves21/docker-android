@@ -1,0 +1,43 @@
+FROM enjoei/ruby-2.5.1-fedora:v012019
+
+RUN dnf -y update \
+    && dnf -y install android-tools \
+    ca-certificates \
+    gpg \
+    zip \
+    wget \
+    libX11 \
+    xorg-x11-xauth \
+    xorg-x11-server-Xvfb \
+    xorg-x11-font-utils \
+    which \
+    qemu-audio-pa.x86_64 \
+    gcc-c++ \
+    libQt5Widgets.so.5 \
+    liberation-*
+
+WORKDIR /root
+
+#===============
+# Istall JDK
+#===============
+RUN dnf -y install tar gzip java java-devel && dnf clean all
+
+#=====================
+# Install Android SDK
+#=====================
+ARG SDK_VERSION=sdk-tools-linux-4333796
+ARG ANDROID_BUILD_TOOLS_VERSION=26.0.0
+ARG ANDROID_PLATFORM_VERSION="android-26"
+
+ENV SDK_VERSION=$SDK_VERSION \
+ANDROID_BUILD_TOOLS_VERSION=$ANDROID_BUILD_TOOLS_VERSION \
+ANDROID_HOME=/root
+
+RUN wget -O tools.zip https://dl.google.com/android/repository/${SDK_VERSION}.zip
+
+#=====================
+# Install node
+#=====================
+
+RUN dnf -y install nodejs && dnf clean all
