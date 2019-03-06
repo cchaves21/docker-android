@@ -1,18 +1,16 @@
+FROM enjoei/qa-appium-fedora:v022019
 
-FROM cchaves21/appium-base:latest
-
-
+LABEL maintainer "Carlos Chaves kchaves001@gmail.com"
 
 WORKDIR /root
 
 #===============
-# Set JAVA_HOME
+# Istall JDK
 #===============
+RUN dnf -y install tar gzip java java-devel && dnf clean all
 
 # set JAVA_HOME
 ENV JAVA_HOME /usr/lib/jvm/java-openjdk
-
-
 ENV PATH=$PATH:$HOME/bin:$JAVA_HOME/bin
 
 #=====================
@@ -26,12 +24,14 @@ ENV SDK_VERSION=$SDK_VERSION \
 ANDROID_BUILD_TOOLS_VERSION=$ANDROID_BUILD_TOOLS_VERSION \
 ANDROID_HOME=/root
 
+RUN wget -O tools.zip https://dl.google.com/android/repository/${SDK_VERSION}.zip
+
+
 RUN unzip tools.zip && rm tools.zip && \
 chmod a+x -R $ANDROID_HOME && \
 chown -R root:root $ANDROID_HOME
 
-COPY Devices skins ./.android/
-COPY Testes ./
+
 
 ENV PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin
 
@@ -41,17 +41,19 @@ echo y | sdkmanager "platform-tools" && \
 echo y | sdkmanager "build-tools;$ANDROID_BUILD_TOOLS_VERSION" && \
 echo y | sdkmanager "platforms;$ANDROID_PLATFORM_VERSION"
 
+COPY docker/Devices/ docker/skins ./.android/
+
 ENV PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
 
-ADD license_accepter.sh /root/
+ADD docker/license_accepter.sh /root/
 RUN /root/license_accepter.sh $ANDROID_HOME
 
 RUN $ANDROID_HOME/tools/bin/sdkmanager emulator
 RUN $ANDROID_HOME/tools/bin/sdkmanager "system-images;android-26;google_apis;x86"
 EXPOSE 5037 5554 5555 5900
+
 #====================================
-# Install latest nodejs, npm, appium
-# Using this workaround to install Appium ->   -> Please remove this workaround asap
+# Install appium
 #====================================
 
 ARG APPIUM_VERSION=1.10.0
@@ -66,16 +68,16 @@ dnf clean
 
 EXPOSE 4723
 
-WORKDIR ./qa-android/
+#RUN mkdir features
+#COPY features ./features
+ARG APK_NAME=qa 
 
-#COPY Gemfile Gemfile.lock ./
+COPY features/support/$APK_NAME.apk ./
+
+COPY Gemfile Gemfile.lock ./
 
 RUN bundle install
 
+RUN adb install -r $APK_NAME.apk
 RUN appium -v
 RUN ruby -v
-
-WORKDIR /root
-
-CMD /usr/bin/appium
-
